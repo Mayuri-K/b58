@@ -7,6 +7,7 @@ module mux4to1(out, MuxSelect, rateFull, rateOne, rateHalf, rateQuarter);
 
     output reg [19:0] out;
 
+    // to choose between the 4 rates of the ball 
     always @(*)
     begin
 		case (MuxSelect[1:0])
