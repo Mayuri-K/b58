@@ -1,22 +1,20 @@
 module control(clk, go, reset_co, move_ball, rd_ld, reset_movement, state);
     
 	 input clk;
-	 input go;
+	input go; // input(key1) that will let you move on to the next state 
 	 
-	 output reg reset_co;
-	 output reg move_ball;
-    output reg rd_ld;
-	 output reg reset_movement;
+	// output is all the signals to do action in the game, 
+	 output reg reset_co; // this signal resets the counter for the score 
+	 output reg move_ball; // this signal lets the ball move 
+    	 output reg rd_ld; // this signals to start drawing the paddle 
+	 output reg reset_movement; // reset all the movement 
 	 output [5:0] state;
 	 
-	 
-    reg [5:0] current_state, next_state;  
+    	 reg [5:0] current_state, next_state;  
     
 	 assign state = current_state;
 	 
 	 //localparam pre_game = 2'b00, draw = 2'b01, game = 2'b11, game_over = 2'b10;
-
-	 
 	 
 	   localparam  pre_game      = 5'd0,
                 pre_game_wait   = 5'd1,
@@ -27,6 +25,7 @@ module control(clk, go, reset_co, move_ball, rd_ld, reset_movement, state);
                 game_over       = 5'd6,
                 game_over_wait  = 5'd7;
     
+	// initiate the state to be at the pre-game state
 	 initial
 	 begin
 		current_state <= pre_game;
@@ -43,8 +42,9 @@ module control(clk, go, reset_co, move_ball, rd_ld, reset_movement, state);
                 game: next_state = go ? game_wait : game; // Loop in current state until value is input
                 game_wait: next_state = go ? game_wait : game_over; // Loop in current state until go signal goes low
                 game_over: next_state = go ? game_over_wait : game_over; // Loop in current state until value is input
-                game_over_wait: next_state = go ? game_over_wait : pre_game; // Loop in current state until go signal goes low
-            default:     next_state = pre_game;
+		// goes back to the pre_game state once signal is given 
+                game_over_wait: next_state = go ? game_over_wait : pre_game; // Loop in current state until go signal goes low 
+            default:     next_state = pre_game; 
         endcase
     end // state_table
    
@@ -59,20 +59,23 @@ module control(clk, go, reset_co, move_ball, rd_ld, reset_movement, state);
 		reset_movement <= 1'b0;
         
 		  case (current_state)
-			pre_game_wait:
+			// before the game, everything is set to 0 
+			pre_game_wait: 
 			begin
 				reset_co <= 1'b0;
 				move_ball <= 1'b0;
 				rd_ld <= 1'b0;
 				reset_movement <= 1'b0;
 			end
-			draw_wait: 
+			  // draw the initial position of the paddle (1px) to indicate that the next signal will start the game
+			draw_wait:   
 			begin
 				reset_co <= 1'b1;
 				move_ball <= 1'b0;
 				rd_ld <= 1'b1;
 				reset_movement <= 1'b0;
 			end
+			  // this is when the game is playing 
 			game_wait:
 			begin
 				reset_co <= 1'b1;
@@ -80,6 +83,7 @@ module control(clk, go, reset_co, move_ball, rd_ld, reset_movement, state);
 				rd_ld <= 1'b1;
 				reset_movement <= 1'b1;
 			end
+			  // the game is over and everything is set to zero
 			game_over_wait:
 			begin
 				 reset_co <= 1'b0;
@@ -91,9 +95,10 @@ module control(clk, go, reset_co, move_ball, rd_ld, reset_movement, state);
         endcase
     end // enable_signals
 	
-	
+	// set the next_state 
    always@(posedge clk)
 	begin: state_FFs
+		
 			current_state <= next_state;
 	end 
 endmodule
