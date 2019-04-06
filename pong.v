@@ -26,14 +26,11 @@ module pong
 	output [5:0] LEDR;
 	output [7:0] HEX7, HEX0;
 
-	// Declare your inputs and outputs here
-	
-	// Do not change the following outputs
-	output			VGA_CLK;   				//	VGA Clockcontrol
-	output			VGA_HS;					//	VGA H_SYNC
-	output			VGA_VS;					//	VGA V_SYNC
-	output			VGA_BLANK_N;				//	VGA BLANK
-	output			VGA_SYNC_N;				//	VGA SYNC
+	output	VGA_CLK;   				//	VGA Clockcontrol
+	output	VGA_HS;					//	VGA H_SYNC
+	output	VGA_VS;					//	VGA V_SYNC
+	output	VGA_BLANK_N;				//	VGA BLANK
+	output	VGA_SYNC_N;				//	VGA SYNC
 	output	[9:0]	VGA_R;   				//	VGA Red[9:0]
 	output	[9:0]	VGA_G;	 				//	VGA Green[9:0]
 	output	[9:0]	VGA_B;   				//	VGA Blue[9:0]
@@ -47,9 +44,7 @@ module pong
 	wire [6:0] y;
 	wire writeEn;
 
-	// Create an Instance of a VGA controller - there can be only one!
-	// Define the number of colours as well as the initial background
-	// image file (.MIF) for the controller.
+	// Create an Instance of a VGA controller
 	vga_adapter VGA(
 			.resetn(resetn),
 			.clock(CLOCK_50),
@@ -94,21 +89,24 @@ module pong
 	wire reset_movementw;
 	wire [19:0] mux_out;
 	
+	// choose the speed of the ball by selecting SW[17:16]
 	mux4to1(
 				.out(mux_out), 
 				.MuxSelect(SW[17:16]), 
-				.rateFull(20'b01001001001111100000), // 300k
-				.rateOne(20'b00111101000010010000), // 400k
-				.rateHalf(20'b00110000110101000000), // 350k
-				.rateQuarter(20'b00 100100100111110000)); // 300k
+				.rateFull(20'b01001001001111100000), // 300k original speed with sws down 
+				.rateOne(20'b00111101000010010000), // 250k
+				.rateHalf(20'b00110000110101000000), // 200k
+				.rateQuarter(20'b00100100100111110000)); // 150k
 	
 	
+	// change the speed of ball by plugging in the rate chosen from mux to the rd
 	rd my_rd(
 			.e(enable),
 			.rate(mux_out),
 			.clear(rd_ldw),
 			.clk(CLOCK_50));
 	
+	// FSM ; controls the state of game, you can move from one state to another by pressing key[1]
 	control ctrl(
 			.clk(CLOCK_50),
 			.go(KEY[1]),
@@ -120,16 +118,19 @@ module pong
 			.state(LEDR[5:0]));
 	
 	
-	
+	// displays the score of player one in the hex7 
 	hex_display player1_score(
 			.IN(score1w),
 			.OUT(HEX7[6:0]));
 	
-	
+	// displays the score of player two in the hex0
 	hex_display player2_score(
 			.IN(score2w), 
 			.OUT(HEX0[6:0]));
 	
+	// controls the movement of the ball/paddle1/paddle2
+	// moves according to the previous position and erases the trace
+	// also keeps the score when ball interacts with the side of screen 
 	game_movement gm(			  
 			.clk(enable),
 			.ld(should_ld), 
@@ -148,22 +149,25 @@ module pong
 			.paddle2x(8'b10011101),
 			.paddle2y(7'b0110110), // paddle inputs end
 			
-			.x_out_b(x_out_bw), 
+			.x_out_b(x_out_bw), // positin of the ball 
 			.y_out_b(y_out_bw), 
 			.color_out_b(color_out_bw),
-			.scorep1(score1w),
+			.scorep1(score1w), //score of the players 
 			.scorep2(score2w), // ball outputs end
 			
-			.paddle1x_out(paddle1xw),
+			.paddle1x_out(paddle1xw), // position of the paddle 1
 			.paddle1y_out(paddle1yw), 
-			.paddle2x_out(paddle2xw), 
+			.paddle2x_out(paddle2xw),  // position of the paddle 2
 			.paddle2y_out(paddle2yw),
-			.color_out_paddle1(color_paddle1w),
+			.color_out_paddle1(color_paddle1w), 	// color of each paddle 
 			.color_out_paddle2(color_paddle2w),
 			//.game_over_sig(game_over_sigw)
 			);
 
-	
+
+	// takes in all the position of the objects to draw on the screen from game_movement
+	// and sends to the vga one by one to be actually drawn 
+	// x, y is the px position going in to the VGA controller 
 	extract_move extract(
 			.clk(enable),
 			.reset_co(reset_cow),
