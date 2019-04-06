@@ -6,7 +6,7 @@ module rd(e, rate, clear, clk);
     
     output e;
 
-	 
+    // rate divider 
     always @(posedge clk)
     begin 
 		if(!clear)
